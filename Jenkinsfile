@@ -1,30 +1,41 @@
+@Library('sharedlibrary')_
+
 pipeline {
-    agent any
+    parameters {
+        string 'GIT_URL'
+        string 'BRANCH_NAME'
+        string 'repository'       
+    }
+    environment {
+        gitRepoURL = "${params.GIT_URL}"
+        gitBranchName = "${params.BRANCH_NAME}"
+        repoName = "${params.repository}"
+        dockerImage = "061039788053.dkr.ecr.us-east-2.amazonaws.com/${repoName}"
+        gitCommit = "${GIT_COMMIT[0..6]}"
+        dockerTag = "${params.BRANCH_NAME}-${gitCommit}"
+    }
+     
+
+    agent {label 'docker-slave-server'}
     stages {
-        stage ('checkout') {
+        stage('Git Checkout') {
             steps {
-                echo "This is checkout stage"
+                gitCheckout("$gitRepoURL", "refs/heads/$gitBranchName", 'githubCred')
             }
         }
-        stage ('build') {
+
+        stage('Docker Build') {
             steps {
-                echo "This is build stage "
+                    dockerImageBuild('$dockerImage', '$dockerTag')
             }
         }
-        stage ('sonarscan') {
+
+        stage('Docker Push') {
             steps {
-                echo "This is sonarscan stage "
-            }
-        }               
-        stage ('push') {
-            steps {
-                echo "This is push stage"
+                dockerECRImagePush('$dockerImage', '$dockerTag', '$repoName', 'awsCred', 'us-east-2')
             }
         }
-        stage ('deploy') {
-            steps {
-                echo "This is deploy stage "
-            }
-        }                    
+
+        
     }
 }
