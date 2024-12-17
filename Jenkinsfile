@@ -35,7 +35,23 @@ pipeline {
                 dockerECRImagePush('$dockerImage', '$dockerTag', '$repoName', 'awsCred', 'us-east-2')
             }
         }
+        stage('Kubernetes Deploy - DEV') {
+            when {
+                branch 'development'
+            }
+            steps {
+                kubernetesEKSHelmDeploy('$dockerImage', '$dockerTag', '$repoName', 'awsCred', 'us-east-2', 'raja', 'dev')
+            }
+        }
 
-        
+        stage('Kubernetes Deploy - UAT') {        
+            when {
+                branch 'master'
+            }
+            steps {
+                kubernetesEKSHelmDeploy('$dockerImage', '$dockerTag', '$repoName', 'awsCred', 'us-east-2', 'raja', 'uat')
+            }
+        }
+       
     }
 }
